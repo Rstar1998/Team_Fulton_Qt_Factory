@@ -20,12 +20,17 @@ void MqttManager::connectToHost(const QString &host, int port)
      qDebug() << "MqttManager::connectToHost::m_client->state";
     qDebug() << m_client->state();
 
-    if (m_client->state() == QMqttClient::Connected) {
-        auto subscription = m_client->subscribe(QMqttTopicFilter("factory/sensors/environment"));
-        if (!subscription) {
-            qDebug() << "Could not subscribe to topic";
-        }
-    }
+
+             if (m_client->state() == QMqttClient::Connected) {
+                 auto subscription = m_client->subscribe(QMqttTopicFilter("factory/sensors/environment"));
+                 if (!subscription) {
+                     qDebug() << "Could not subscribe to topic";
+                 }
+
+             }
+
+
+
 }
 
 void MqttManager::onMessageReceived(const QByteArray &message, const QMqttTopicName &topic)
