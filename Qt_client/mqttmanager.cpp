@@ -2,48 +2,81 @@
 #include <QDebug>
 
 MqttManager::MqttManager(QObject *parent)
-    : QObject(parent), m_client(new QMqttClient(this)),
-    m_temperature(0.0), m_humidity(0.0), m_airQualityIndex(0)
+    : QObject(parent),
+    m_client(new QMqttClient(this)),
+    m_temperature(0.0),
+    m_humidity(0.0),
+    m_airQualityIndex(0)
 {
+    // Connect MQTT client signals
     connect(m_client, &QMqttClient::messageReceived,
             this, &MqttManager::onMessageReceived);
+
+    connect(m_client, &QMqttClient::stateChanged,
+            this, &MqttManager::onStateChanged);
 }
 
 void MqttManager::connectToHost(const QString &host, int port)
 {
-    qDebug() << "MqttManager::connectToHost";
+    qDebug() << "Attempting to connect to MQTT broker:" << host << ":" << port;
+
     m_client->setHostname(host);
     m_client->setPort(port);
     m_client->connectToHost();
+}
 
-    // Subscribe to topic
-     qDebug() << "MqttManager::connectToHost::m_client->state";
-    qDebug() << m_client->state();
+void MqttManager::disconnectFromHost()
+{
+    m_client->disconnectFromHost();
+}
 
+void MqttManager::onStateChanged(QMqttClient::ClientState state)
+{
+    qDebug() << "MQTT Client State Changed:" << state;
 
-             if (m_client->state() == QMqttClient::Connected) {
-                 auto subscription = m_client->subscribe(QMqttTopicFilter("factory/sensors/environment"));
-                 if (!subscription) {
-                     qDebug() << "Could not subscribe to topic";
-                 }
+    switch(state) {
+    case QMqttClient::Disconnected:
+        qDebug() << "Disconnected from MQTT broker";
+        break;
+    case QMqttClient::Connecting:
+        qDebug() << "Connecting to MQTT broker...";
+        break;
+    case QMqttClient::Connected:
+        qDebug() << "Connected to MQTT broker";
+        // Subscribe to topic when connected
+        auto subscription = m_client->subscribe(QMqttTopicFilter("factory/sensors/environment"), 1);
+        if (!subscription) {
+            qDebug() << "Could not subscribe to topic";
+        }
+        break;
+    }
 
-             }
-
-
-
+    emit connectionStatusChanged();
 }
 
 void MqttManager::onMessageReceived(const QByteArray &message, const QMqttTopicName &topic)
 {
-    QJsonDocument doc = QJsonDocument::fromJson(message);
+    qDebug() << "Message received on topic:" << topic;
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(message, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError) {
+        qDebug() << "JSON parse error:" << parseError.errorString();
+        return;
+    }
+
+    if (!doc.isObject()) {
+        qDebug() << "Received JSON is not an object";
+        return;
+    }
+
     QJsonObject jsonObj = doc.object();
 
-    qDebug() << "MqttManager::onMessageReceived";
-
-    // Update values
-    m_temperature = jsonObj["temperature"].toDouble();
-    m_humidity = jsonObj["humidity"].toDouble();
-    m_airQualityIndex = jsonObj["air_quality_index"].toInt();
+    // Safely extract values with default fallbacks
+    m_temperature = jsonObj.value("temperature").toDouble(m_temperature);
+    m_humidity = jsonObj.value("humidity").toDouble(m_humidity);
+    m_airQualityIndex = jsonObj.value("air_quality_index").toInt(m_airQualityIndex);
 
     // Emit change signals
     emit temperatureChanged();

@@ -6,7 +6,7 @@ services:
     ports:
       - "1883:1883"  # MQTT Port
       - "9001:9001"  # WebSocket Port (optional)
-    network_mode: "host"
+    # network_mode: "host"
     volumes:
       - ./mqtt-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf  # Custom config
       - ./mqtt-broker/data:/mosquitto/data  # Persistence storage

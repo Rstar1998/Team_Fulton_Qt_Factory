@@ -13,7 +13,41 @@ Window {
     color: "#121212"
 
     Component.onCompleted: {
+        // Connect with default localhost and standard MQTT port
         mqttManager.connectToHost()
+    }
+
+    // Connection Status Indicator
+    Rectangle {
+        id: connectionStatus
+        anchors {
+            top: parent.top
+            right: parent.right
+            margins: 10
+        }
+        width: 100
+        height: 30
+        color: "#1E1E1E"
+        border.color: "#333333"
+        radius: 5
+
+        Label {
+            anchors.centerIn: parent
+            text: "Connecting..."
+            color: "white"
+            font.pixelSize: 12
+        }
+
+
+        Button {
+            anchors {
+                right: parent.left
+                verticalCenter: parent.verticalCenter
+                rightMargin: 10
+            }
+            text: "Reconnect"
+            onClicked: mqttManager.connectToHost()
+        }
     }
 
     // Center the entire content
@@ -128,3 +162,4 @@ Window {
         }
     }
 }
+

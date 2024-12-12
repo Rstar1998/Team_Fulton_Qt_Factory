@@ -1,10 +1,11 @@
+
 #ifndef MQTTMANAGER_H
 #define MQTTMANAGER_H
 
 #include <QObject>
 #include <QMqttClient>
-#include <QJsonObject>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 class MqttManager : public QObject
 {
@@ -16,19 +17,22 @@ class MqttManager : public QObject
 public:
     explicit MqttManager(QObject *parent = nullptr);
 
+    Q_INVOKABLE void connectToHost(const QString &host = "localhost", int port = 1883);
+    Q_INVOKABLE void disconnectFromHost();
+
     double temperature() const { return m_temperature; }
     double humidity() const { return m_humidity; }
     int airQualityIndex() const { return m_airQualityIndex; }
-
-    Q_INVOKABLE void connectToHost(const QString &host = "localhost", int port = 1883);
 
 signals:
     void temperatureChanged();
     void humidityChanged();
     void airQualityIndexChanged();
+    void connectionStatusChanged();
 
 private slots:
     void onMessageReceived(const QByteArray &message, const QMqttTopicName &topic);
+    void onStateChanged(QMqttClient::ClientState state);
 
 private:
     QMqttClient *m_client;
@@ -38,5 +42,3 @@ private:
 };
 
 #endif // MQTTMANAGER_H
-
-
